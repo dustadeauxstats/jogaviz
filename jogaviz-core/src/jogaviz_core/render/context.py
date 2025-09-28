@@ -1,5 +1,6 @@
 from typing import Any
 from simpleeval import simple_eval, NameNotDefined, AttributeDoesNotExist
+from jogaviz_core.render.functions import FUNCTIONS
 
 
 class RenderContext:
@@ -14,7 +15,7 @@ class SymbolNotFound(Exception):
 
 def safe_eval(expr: str, ctx: RenderContext) -> Any:
     try:
-        return simple_eval(expr, names=ctx.env)
+        return simple_eval(expr, names=ctx.env, functions=FUNCTIONS)
     except NameNotDefined as e:
         raise SymbolNotFound(f"Name not defined in expression '{expr}': {e}") from e
     except AttributeDoesNotExist as e:

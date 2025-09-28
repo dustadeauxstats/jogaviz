@@ -28,6 +28,28 @@ def test_handle_bind_missing_field() -> None:
         handle_bind(elem, ctx)
 
 
+def test_handle_bind_with_function() -> None:
+    elem = etree.Element("text", attrib={"data-bind": "uppercase(team.name)"})
+    ctx = RenderContext({"team": {"name": "Red Star FC"}})
+
+    handle_bind(elem, ctx)
+
+    assert elem.text == "RED STAR FC"
+    assert "data-bind" not in elem.attrib
+
+
+def test_handle_bind_with_nested_function() -> None:
+    elem = etree.Element(
+        "text", attrib={"data-bind": "truncate(uppercase(team.name), 7)"}
+    )
+    ctx = RenderContext({"team": {"name": "Red Star FC"}})
+
+    handle_bind(elem, ctx)
+
+    assert elem.text == "RED STA..."
+    assert "data-bind" not in elem.attrib
+
+
 def test_handle_attr_sets_attributes() -> None:
     elem = etree.Element(
         "rect", attrib={"data-attr": "color: team.color; stroke: team.border"}
