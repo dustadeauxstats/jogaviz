@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "jogaviz-core"
+version = "0.1.0"
+description = "Core library for Jogaviz: open-source sports data visualization engine. Provides schemas for input validation, rendering utilities, and a template framework for static/dynamic visualizations."
+authors = ["saiqi <julien.bernard.iphone@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.11.9"
+lxml = "^6.0.2"
+simpleeval = "^1.0.3"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+mypy = "^1.18.2"
+ruff = "^0.13.2"
+lxml-stubs = "^0.5.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "simpleeval.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+fix = true
+unsafe-fixes = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["jogaviz_core"]
+combine-as-imports = true
+

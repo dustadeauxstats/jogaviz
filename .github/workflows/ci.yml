@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'jogaviz-core/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'jogaviz-core/**'
+jobs:
+    ci-core:
+        name: Jogaviz Core CI
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: ./jogaviz-core
+        steps:
+          - uses: actions/checkout@v3
+          - name: Set up Python
+            uses: actions/setup-python@v4
+            with:
+              python-version: |
+                3.9
+                3.10
+                3.11
+                3.12
+                3.13
+
+          - name: Set up Poetry
+            uses: abatilo/actions-poetry@v2
+            with:
+              poetry-version: 'latest'
+
+          - name: Install dependencies with Poetry
+            run: poetry install --with dev
+
+          - name: Run linter with ruff
+            run: poetry ruff check src tests
+
+          - name: Run type checking with mypy
+            run: poetry mypy src tests
+
+          - name: Run tests with pytest
+            run: poetry pytest
