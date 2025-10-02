@@ -61,28 +61,32 @@ def handle_if(elem: etree._Element, ctx: RenderContext) -> None:
 
 
 def handle_repeat(elem: etree._Element, ctx: RenderContext) -> None:
-    list_expr = elem.attrib.pop(DirectiveType.REPEAT.value)
-    if not list_expr:
+    expr = elem.attrib.pop("data-repeat")
+    if not expr:
         return
 
-    items = safe_eval(str(list_expr), ctx)
+    items = safe_eval(str(expr), ctx)
+
     if not isinstance(items, list):
         raise InvalidType(
-            f"Expression for {DirectiveType.REPEAT.value} must evaluate to a list."
+            f"Expression for {DirectiveType.REPEAT.value} must be a list."
         )
-    parent = elem.getparent()
-    if parent is None:
-        return
-    template = copy.deepcopy(elem)
-    parent.remove(elem)
 
-    for i, item in enumerate(items):
-        new_elem = copy.deepcopy(template)
-        item_ctx = RenderContext({**item, "@index": i, **ctx.data})
-        for directive, handler in DIRECTIVES.items():
-            if directive.value in new_elem.attrib:
-                handler(new_elem, item_ctx)
-        parent.append(new_elem)
+    template_children = [copy.deepcopy(child) for child in elem]
+
+    for child in list(elem):
+        elem.remove(child)
+
+    for idx, item in enumerate(items):
+        merged_env = {**ctx.env, **item, "index": idx}
+        new_ctx = RenderContext(merged_env)
+
+        for template_child in template_children:
+            clone = copy.deepcopy(template_child)
+            from .engine import render_element
+
+            render_element(clone, new_ctx)
+            elem.append(clone)
 
 
 # Register directives

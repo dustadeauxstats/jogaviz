@@ -114,9 +114,15 @@ def test_handle_if_invalid_type() -> None:
 
 
 def test_handle_repeat_creates_elements() -> None:
-    parent = etree.Element("svg")
-    elem = etree.SubElement(
-        parent, "text", attrib={"data-repeat": "teams", "data-bind": "name"}
+    root = etree.Element("svg")
+    parent = etree.SubElement(root, "g", attrib={"data-repeat": "teams"})
+    etree.SubElement(
+        parent,
+        "text",
+        attrib={
+            "data-bind": "name",
+            "data-attr": "y: index * 20 + 20",
+        },
     )
     ctx = RenderContext(
         {
@@ -127,18 +133,20 @@ def test_handle_repeat_creates_elements() -> None:
         }
     )
 
-    handle_repeat(elem, ctx)
+    handle_repeat(parent, ctx)
 
     assert len(parent) == 2
     assert parent[0].text == "Red Star FC"
+    assert parent[0].attrib["y"] == "20"
     assert parent[1].text == "Paris FC"
+    assert parent[1].attrib["y"] == "40"
     assert "data-repeat" not in parent[0].attrib
     assert "data-repeat" not in parent[1].attrib
 
 
 def test_handle_repeat_missing_field() -> None:
     parent = etree.Element("svg")
-    elem = etree.SubElement(parent, "text", attrib={"data-repeat": "missing_field"})
+    elem = etree.SubElement(parent, "g", attrib={"data-repeat": "missing_field"})
     ctx = RenderContext({"teams": [{"name": "Red Star FC"}]})
 
     with pytest.raises(SymbolNotFound):
@@ -146,10 +154,9 @@ def test_handle_repeat_missing_field() -> None:
 
 
 def test_handle_repeat_missing_item_field() -> None:
-    parent = etree.Element("svg")
-    elem = etree.SubElement(
-        parent, "text", attrib={"data-repeat": "teams", "data-bind": "missing_field"}
-    )
+    root = etree.Element("svg")
+    parent = etree.SubElement(root, "g", attrib={"data-repeat": "teams"})
+    etree.SubElement(parent, "text", attrib={"data-bind": "missing_field"})
     ctx = RenderContext(
         {
             "teams": [
@@ -159,15 +166,15 @@ def test_handle_repeat_missing_item_field() -> None:
     )
 
     with pytest.raises(SymbolNotFound):
-        handle_repeat(elem, ctx)
+        handle_repeat(parent, ctx)
 
 
 def test_handle_repeat_empty_list() -> None:
-    parent = etree.Element("svg")
-    elem = etree.SubElement(parent, "text", attrib={"data-repeat": "teams"})
+    root = etree.Element("svg")
+    parent = etree.SubElement(root, "g", attrib={"data-repeat": "teams"})
     ctx = RenderContext({"teams": []})
 
-    handle_repeat(elem, ctx)
+    handle_repeat(parent, ctx)
 
     assert len(parent) == 0
 
