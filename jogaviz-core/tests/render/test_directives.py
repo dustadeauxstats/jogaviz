@@ -186,3 +186,46 @@ def test_handle_repeat_invalid_type() -> None:
 
     with pytest.raises(InvalidType):
         handle_repeat(elem, ctx)
+
+
+def test_handle_nested_repeat() -> None:
+    root = etree.Element("svg")
+    parent = etree.SubElement(root, "g", attrib={"data-repeat": "leagues"})
+    etree.SubElement(parent, "text", attrib={"data-bind": "name"})
+    teams_group = etree.SubElement(parent, "g", attrib={"data-repeat": "teams"})
+    etree.SubElement(
+        teams_group,
+        "text",
+        attrib={
+            "data-bind": "name",
+            "data-attr": "y: index * 20 + 20",
+        },
+    )
+    ctx = RenderContext(
+        {
+            "leagues": [
+                {
+                    "name": "Ligue 1",
+                    "teams": [{"name": "Red Star FC"}, {"name": "Paris FC"}],
+                },
+                {
+                    "name": "Ligue 2",
+                    "teams": [{"name": "PSG"}],
+                },
+            ]
+        }
+    )
+
+    handle_repeat(parent, ctx)
+
+    assert parent[0].text == "Ligue 1"
+    assert len(parent[1]) == 2
+    assert parent[1][0].text == "Red Star FC"
+    assert parent[1][0].attrib["y"] == "20"
+    assert parent[1][1].text == "Paris FC"
+    assert parent[1][1].attrib["y"] == "40"
+
+    assert parent[2].text == "Ligue 2"
+    assert len(parent[3]) == 1
+    assert parent[3][0].text == "PSG"
+    assert parent[3][0].attrib["y"] == "20"
