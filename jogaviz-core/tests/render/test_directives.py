@@ -6,6 +6,7 @@ from jogaviz_core.render.directives import (
     handle_attr,
     handle_if,
     handle_repeat,
+    handle_src,
 )
 from jogaviz_core.render.context import RenderContext, SymbolNotFound
 
@@ -229,3 +230,24 @@ def test_handle_nested_repeat() -> None:
     assert len(parent[3]) == 1
     assert parent[3][0].text == "PSG"
     assert parent[3][0].attrib["y"] == "20"
+
+
+def test_handle_src_sets_href() -> None:
+    elem = etree.Element("image", attrib={"data-src": "team.logo"})
+    ctx = RenderContext({"team": {"logo": "http://example.com/logo.png"}})
+
+    handle_src(elem, ctx)
+
+    assert (
+        elem.attrib["{http://www.w3.org/1999/xlink}href"]
+        == "http://example.com/logo.png"
+    )
+    assert "data-src" not in elem.attrib
+
+
+def test_handle_src_missing_field() -> None:
+    elem = etree.Element("image", attrib={"data-src": "missing_field"})
+    ctx = RenderContext({"team": {"logo": "http://example.com/logo.png"}})
+
+    with pytest.raises(SymbolNotFound):
+        handle_src(elem, ctx)

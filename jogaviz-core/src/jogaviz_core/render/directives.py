@@ -15,6 +15,7 @@ class DirectiveType(str, Enum):
     STYLE = "data-style"
     IF = "data-if"
     REPEAT = "data-repeat"
+    SRC = "data-src"
 
 
 DirectiveHandler = Callable[[etree._Element, RenderContext], None]
@@ -61,7 +62,7 @@ def handle_if(elem: etree._Element, ctx: RenderContext) -> None:
 
 
 def handle_repeat(elem: etree._Element, ctx: RenderContext) -> None:
-    expr = elem.attrib.pop("data-repeat")
+    expr = elem.attrib.pop(DirectiveType.REPEAT.value)
     if not expr:
         return
 
@@ -89,8 +90,22 @@ def handle_repeat(elem: etree._Element, ctx: RenderContext) -> None:
             elem.append(clone)
 
 
+def handle_src(elem: etree._Element, ctx: RenderContext) -> None:
+    expr = elem.attrib.pop(DirectiveType.SRC.value)
+    if not expr:
+        return
+
+    value = safe_eval(str(expr), ctx)
+
+    if not value:
+        return
+
+    elem.set("{http://www.w3.org/1999/xlink}href", str(value))
+
+
 # Register directives
 register_directive(DirectiveType.BIND, handle_bind)
 register_directive(DirectiveType.ATTR, handle_attr)
 register_directive(DirectiveType.IF, handle_if)
 register_directive(DirectiveType.REPEAT, handle_repeat)
+register_directive(DirectiveType.SRC, handle_src)
