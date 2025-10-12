@@ -1,3 +1,4 @@
+from typing import Generator
 import pytest
 from lxml import etree
 from jogaviz_core.render.directives import (
@@ -7,8 +8,24 @@ from jogaviz_core.render.directives import (
     handle_if,
     handle_repeat,
     handle_src,
+    handle_component,
 )
 from jogaviz_core.render.context import RenderContext, SymbolNotFound
+from jogaviz_core.render.components import COMPONENTS
+
+
+@pytest.fixture()
+def dummy_component() -> Generator[None, None, None]:
+    COMPONENTS["team-card"] = etree.fromstring(
+        """
+        <g name="team-card">
+            <image x="0" y="0" width="50" height="50" data-src="team_picture"/>
+            <text x="20" y="25" data-bind="team_name"/>
+        </g>
+        """.strip()
+    )
+    yield
+    COMPONENTS.clear()
 
 
 def test_handle_bind_replaces_text() -> None:
@@ -251,3 +268,40 @@ def test_handle_src_missing_field() -> None:
 
     with pytest.raises(SymbolNotFound):
         handle_src(elem, ctx)
+
+
+def test_handle_component_renders_component(
+    dummy_component: None,
+) -> None:
+    root = etree.Element("svg")
+    elem = etree.SubElement(
+        root,
+        "g",
+        attrib={
+            "data-component": "team-card",
+            "data-props": "team_name: team.name; team_picture: team.picture",
+        },
+    )
+    ctx = RenderContext(
+        {
+            "team": {
+                "name": "Red Star FC",
+                "picture": "https://example.com/red-star.png",
+            }
+        }
+    )
+
+    handle_component(elem, ctx)
+
+    new_elem = root[0]
+    assert new_elem.tag == "g"
+    assert len(new_elem) == 2
+    image_elem = new_elem[0]
+    text_elem = new_elem[1]
+    assert image_elem.tag == "image"
+    assert (
+        image_elem.attrib["{http://www.w3.org/1999/xlink}href"]
+        == "https://example.com/red-star.png"
+    )
+    assert text_elem.tag == "text"
+    assert text_elem.text == "Red Star FC"

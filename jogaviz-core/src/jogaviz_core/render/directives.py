@@ -2,10 +2,15 @@ from typing import Callable
 import copy
 from enum import Enum
 from lxml import etree
-from jogaviz_core.render.context import RenderContext, safe_eval
+from .context import RenderContext, safe_eval
+from .components import parse_props, COMPONENTS
 
 
 class InvalidType(Exception):
+    pass
+
+
+class ComponentNotFound(Exception):
     pass
 
 
@@ -16,6 +21,7 @@ class DirectiveType(str, Enum):
     IF = "data-if"
     REPEAT = "data-repeat"
     SRC = "data-src"
+    COMPONENT = "data-component"
 
 
 DirectiveHandler = Callable[[etree._Element, RenderContext], None]
@@ -103,9 +109,34 @@ def handle_src(elem: etree._Element, ctx: RenderContext) -> None:
     elem.set("{http://www.w3.org/1999/xlink}href", str(value))
 
 
+def handle_component(elem: etree._Element, ctx: RenderContext) -> None:
+    comp_name = elem.attrib.pop(DirectiveType.COMPONENT.value)
+    if not comp_name:
+        return
+
+    props_expr = str(elem.attrib.pop("data-props"))
+    props = parse_props(props_expr, ctx) if props_expr else {}
+
+    template = COMPONENTS.get(str(comp_name))
+
+    if template is None:
+        raise ComponentNotFound(f"Component '{str(comp_name)}' not found.")
+
+    clone = copy.deepcopy(template)
+    new_ctx = RenderContext(props)
+    from .engine import render_element
+
+    render_element(clone, new_ctx)
+
+    parent = elem.getparent()
+    if parent is not None:
+        parent.replace(elem, clone)
+
+
 # Register directives
 register_directive(DirectiveType.BIND, handle_bind)
 register_directive(DirectiveType.ATTR, handle_attr)
 register_directive(DirectiveType.IF, handle_if)
 register_directive(DirectiveType.REPEAT, handle_repeat)
 register_directive(DirectiveType.SRC, handle_src)
+register_directive(DirectiveType.COMPONENT, handle_component)

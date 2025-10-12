@@ -14,6 +14,9 @@ class SymbolNotFound(Exception):
 
 
 def safe_eval(expr: str, ctx: RenderContext) -> Any:
+    if expr.strip() == ".":
+        return ctx.env.get("_current", ctx.env)
+
     try:
         return simple_eval(expr, names=ctx.env, functions=FUNCTIONS)
     except NameNotDefined as e:

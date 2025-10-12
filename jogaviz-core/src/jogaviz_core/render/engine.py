@@ -1,7 +1,7 @@
 from typing import Any
 from lxml import etree
-from jogaviz_core.render.context import RenderContext
-from jogaviz_core.render.directives import DIRECTIVES
+from .context import RenderContext
+from .directives import DIRECTIVES
 
 
 def render_element(elem: etree._Element, ctx: RenderContext) -> None:
